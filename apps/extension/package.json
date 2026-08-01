@@ -1,0 +1,30 @@
+{
+  "name": "sift-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sift browser extension \u2014 capture from X, Xiaohongshu and any page.",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "postinstall": "wxt prepare",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test --experimental-strip-types test/*.test.ts"
+  },
+  "dependencies": {
+    "@sift/core": "workspace:*",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/chrome": "0.1.29",
+    "@types/react": "19.2.8",
+    "@types/react-dom": "19.2.4",
+    "@wxt-dev/module-react": "1.1.4",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "wxt": "0.21.2"
+  }
+}

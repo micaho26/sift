@@ -1,0 +1,35 @@
+name: Scoring complaint
+description: An item ranked higher or lower than it deserved
+labels: [scoring]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The most useful thing you can include is the score breakdown — press
+        <kbd>W</kbd> on the item. "This ranked too low" is hard to act on;
+        "novelty was 0.12 but this is a genuinely new result" is immediately
+        actionable.
+  - type: input
+    id: item
+    attributes:
+      label: The item
+      placeholder: Title, and its URL if it is public
+    validations:
+      required: true
+  - type: textarea
+    id: breakdown
+    attributes:
+      label: Score breakdown
+      description: The six component values and the final score.
+      placeholder: |
+        score 31
+        relevance 0.50  velocity 1.00  depth 0.21
+        novelty 0.97  authority 0.71  recency 0.94  noise 0.77
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What it should have scored, and why
+    validations:
+      required: true

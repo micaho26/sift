@@ -1,0 +1,33 @@
+{
+  "name": "sift-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sift web client.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@sift/core": "workspace:*",
+    "@tanstack/react-query": "5.101.4",
+    "@tanstack/react-virtual": "3.14.9",
+    "cmdk": "1.1.1",
+    "lucide-react": "1.27.0",
+    "motion": "12.43.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sonner": "2.0.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/react": "19.2.8",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.4",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vite": "8.1.5"
+  }
+}

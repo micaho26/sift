@@ -1,0 +1,56 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.output/
+.wxt/
+.astro/
+apps/extension/.wxt/
+apps/extension/.output/
+
+# caches
+.turbo/
+*.tsbuildinfo
+.vite/
+.cache/
+.eslintcache
+
+# local data (user's private corpus — never commit)
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.models/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+logs/
+
+# screenshots workspace (generated artifacts are committed selectively under assets/)
+.playwright/
+test-results/
+playwright-report/
+
+# Screenshot fixtures (regenerate with `pnpm screenshots`)
+data/screenshots/

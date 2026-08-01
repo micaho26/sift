@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Sift — signal intelligence</title>
+    <meta name="description" content="A local-first AI intelligence workstation. Harvest, score, search and synthesise high-signal AI news from across the web." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Resolve the theme before first paint — a flash of the wrong theme is the
+      // most visible bug a dark-first app can ship.
+      ;(() => {
+        try {
+          const stored = localStorage.getItem('sift.theme')
+          const system = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+          const theme = stored === 'light' || stored === 'dark' ? stored : stored === 'system' || !stored ? system : 'dark'
+          document.documentElement.classList.toggle('dark', theme === 'dark')
+          document.documentElement.classList.toggle('light', theme === 'light')
+          document.documentElement.style.colorScheme = theme
+        } catch {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Shown until React mounts; removed by the app. Keeps first paint from being blank. -->
+    <div id="boot" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M2 12 L12 2 L22 12 L12 22 Z" fill="currentColor" opacity="0.9"/></svg>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

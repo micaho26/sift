@@ -1,0 +1,637 @@
+---
+import Base from '../layouts/Base.astro'
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+const repo = 'https://github.com/sift-app/sift'
+const clone = 'git clone https://github.com/sift-app/sift && cd sift && pnpm install && pnpm seed && pnpm dev'
+
+/** The six scoring components, with the copy that explains each honestly. */
+const components = [
+  {
+    name: 'Relevance',
+    weight: 26,
+    colour: 'var(--accent)',
+    blurb:
+      'Cosine distance to what you have actually saved, clustered so a robotics interest and an inference interest stay distinct instead of averaging into mush.',
+  },
+  {
+    name: 'Velocity',
+    weight: 22,
+    colour: 'var(--teal)',
+    blurb:
+      'Attention per hour, normalised against each platform’s own distribution and log-squashed so one viral post cannot own the top of your inbox.',
+  },
+  {
+    name: 'Depth',
+    weight: 15,
+    colour: 'oklch(76% 0.14 120)',
+    blurb:
+      'Rewards evidence: numbers, code, citations, artefacts, hedged language. A 4,000-word SEO page scores below a 300-word post with a benchmark table.',
+  },
+  {
+    name: 'Novelty',
+    weight: 14,
+    colour: 'var(--warning)',
+    blurb:
+      'One minus the similarity to everything already in your library. This is what stops the fortieth report of one launch from reaching you.',
+  },
+  {
+    name: 'Authority',
+    weight: 13,
+    colour: 'oklch(72% 0.13 330)',
+    blurb:
+      'Reach blended with revealed preference — how often you keep this author’s work. The second half cannot be bought, so it carries most of the weight.',
+  },
+  {
+    name: 'Recency',
+    weight: 10,
+    colour: 'var(--fg-tertiary)',
+    blurb: 'Exponential decay with a half-life you set. Default 36 hours: yesterday still matters, last month rarely does.',
+  },
+]
+
+const features = [
+  {
+    title: 'Hybrid search that works in two languages',
+    body: 'BM25 over FTS5, concept expansion through a 24-topic AI taxonomy, and exact vector KNN — fused by reciprocal rank. Chinese is indexed as character bigrams, so 「量化」 and “quantisation” both find the same note.',
+    icon: 'search',
+  },
+  {
+    title: 'Two-tier deduplication',
+    body: 'SimHash with LSH banding catches verbatim reposts; embedding similarity gated on a shared named entity and a 72-hour window catches the same story told in different words. Nothing is deleted — echoes fold behind a canonical item.',
+    icon: 'layers',
+  },
+  {
+    title: 'Explains every score',
+    body: 'Press W on any item to see all six components, their weights, and the sentence-level reasons. A ranking you cannot interrogate is a ranking you cannot trust.',
+    icon: 'info',
+  },
+  {
+    title: 'Ask your own library',
+    body: 'Retrieval-augmented chat scoped strictly to what you have collected. Citations arrive before the first token and link back to the item. If the answer is not in your corpus, it says so instead of inventing one.',
+    icon: 'message',
+  },
+  {
+    title: 'Keyboard-first triage',
+    body: 'J/K to move, S to save, E to archive, ⌘K for everything. Optimistic updates with six seconds of undo, so two hundred items is a few minutes rather than an afternoon.',
+    icon: 'keyboard',
+  },
+  {
+    title: 'Trends that tell you something',
+    body: 'Not “which topics are big” — always the same few — but which are accelerating, computed against the previous window with smoothing so a fresh install does not report 17x growth on three items.',
+    icon: 'trend',
+  },
+]
+
+const sources = [
+  { label: 'X / Twitter', via: 'extension', colour: '#e7e9ea' },
+  { label: '小红书', via: 'extension', colour: '#ff2e4d' },
+  { label: 'Hacker News', via: 'built-in', colour: '#ff6600' },
+  { label: 'arXiv', via: 'built-in', colour: '#b31b1b' },
+  { label: 'GitHub', via: 'built-in', colour: '#8b949e' },
+  { label: 'Hugging Face', via: 'built-in', colour: '#ffcc4d' },
+  { label: 'Reddit', via: 'built-in', colour: '#ff4500' },
+  { label: 'RSS / Atom', via: 'built-in', colour: '#f59e0b' },
+  { label: 'Any article', via: 'extension', colour: '#8b7cf6' },
+]
+
+const faqs = [
+  {
+    q: 'Does anything leave my machine?',
+    a: 'No, unless you choose it. The server binds to loopback, the database is one SQLite file in ./data, and there is no telemetry of any kind. The only outbound traffic is to the sources you configure — and to an AI provider if you paste a key, which is entirely optional.',
+  },
+  {
+    q: 'Do I need an API key?',
+    a: 'No. Embeddings default to a built-in hashing embedder that needs no download and works offline, so semantic search, novelty detection and duplicate folding all work on first run. Summaries fall back to local extractive summarisation. Add Anthropic, OpenAI or Ollama when you want written prose.',
+  },
+  {
+    q: 'How does the extension get data from X?',
+    a: 'It reads the JSON your browser already received. A MAIN-world script observes the page’s own fetch and XHR responses and forwards them to the extension — nothing is re-requested, no credentials are touched, and no scraping traffic is generated. The DOM is scraped only as a fallback when the response shape changes.',
+  },
+  {
+    q: 'Is this against the platforms’ terms?',
+    a: 'Sift reads what you are already logged in and looking at, at the rate you browse, for your own private reference. It does not automate accounts, bypass access controls, or redistribute anything. Automatic collection is per-site and can be turned off with one keystroke.',
+  },
+  {
+    q: 'What are the actual dependencies?',
+    a: 'Zero native modules. SQLite comes from Node 24’s built-in node:sqlite, so pnpm install can never fail on node-gyp. The server has four runtime dependencies; the vector index is a hand-written flat scan that does exact KNN over a contiguous Float32Array.',
+  },
+  {
+    q: 'How big does it get?',
+    a: 'A 100k-item library is roughly 400 MB of SQLite plus 154 MB of in-memory vectors at 384 dimensions. Search stays under 15 ms because the corpus is small enough for exact retrieval — no approximate index, no recall cliff.',
+  },
+]
+---
+
+<Base>
+  <!-- ════════════════════════════════════════════════════════════ hero ══ -->
+  <section class="relative pt-20 pb-16 sm:pt-28">
+    <div class="container-page">
+      <div class="mx-auto max-w-3xl text-center">
+        <a
+          href={`${repo}/releases`}
+          class="reveal inline-flex items-center gap-2 rounded-full border border-border bg-bg-subtle/80 px-3 py-1 text-[12px] text-fg-tertiary backdrop-blur transition-colors hover:border-accent-600/50 hover:text-fg-secondary"
+        >
+          <span class="relative flex size-1.5">
+            <span class="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-70"></span>
+            <span class="relative inline-flex size-1.5 rounded-full bg-success"></span>
+          </span>
+          v0.1.0 · open source, MIT
+          <span class="text-fg-quaternary">→</span>
+        </a>
+
+        <h1
+          class="reveal mt-7 text-balance text-[2.6rem] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-[3.75rem] md:text-[4.25rem]"
+          style="transition-delay: 60ms"
+        >
+          <span class="gradient-text">The AI firehose,</span><br />
+          <span class="gradient-text">sifted down to signal.</span>
+        </h1>
+
+        <p
+          class="reveal text-pretty mx-auto mt-6 max-w-2xl text-[15px] leading-relaxed text-fg-secondary sm:text-[16.5px]"
+          style="transition-delay: 120ms"
+        >
+          Sift collects what matters from X, 小红书, Hacker News, arXiv, GitHub and your feeds, scores every item on six
+          explainable axes, folds away the duplicates, and gives you one keyboard-driven place to read, annotate, search and
+          synthesise it. Everything runs on your machine, in one SQLite file.
+        </p>
+
+        <div class="reveal mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row" style="transition-delay: 180ms">
+          <a
+            href="#start"
+            class="group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-accent px-6 text-[14px] font-medium text-white shadow-[inset_0_1px_0_0_oklch(100%_0_0/0.2)] transition-all duration-200 hover:brightness-110 active:scale-[0.98] sm:w-auto"
+          >
+            Run it in 60 seconds
+            <span class="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+          </a>
+          <a
+            href={repo}
+            class="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-bg-subtle/60 px-6 text-[14px] font-medium text-fg-secondary backdrop-blur transition-all duration-200 hover:border-border hover:bg-bg-elevated hover:text-fg sm:w-auto"
+          >
+            Read the source
+          </a>
+        </div>
+
+        <!-- install command -->
+        <div class="reveal mx-auto mt-7 max-w-2xl" style="transition-delay: 240ms">
+          <div class="flex items-center gap-2 rounded-lg border border-border-subtle bg-bg-inset/80 px-3 py-2.5 backdrop-blur">
+            <span class="select-none font-mono text-[12px] text-fg-quaternary">$</span>
+            <code class="flex-1 overflow-x-auto whitespace-nowrap text-left font-mono text-[12px] text-fg-secondary">
+              pnpm install && pnpm seed && pnpm dev
+            </code>
+            <button
+              type="button"
+              data-copy={clone}
+              data-label="Copy"
+              class="shrink-0 rounded-md border border-border px-2 py-1 font-mono text-[11px] text-fg-tertiary transition-colors hover:bg-bg-subtle hover:text-fg"
+            >
+              Copy
+            </button>
+          </div>
+          <p class="mt-2.5 font-mono text-[11px] text-fg-quaternary">
+            Node 24+ · zero native modules · no account · no API key required
+          </p>
+        </div>
+      </div>
+
+      <!-- product shot -->
+      <figure class="reveal mt-16 sm:mt-20" style="transition-delay: 300ms">
+        <div class="relative mx-auto max-w-6xl">
+          <!-- Glow behind the frame, so the screenshot sits in the page rather than on it. -->
+          <div
+            class="absolute -inset-x-8 -top-8 bottom-0 -z-10 rounded-[32px] opacity-60 blur-3xl"
+            style="background: linear-gradient(150deg, oklch(50% 0.18 285 / 0.4), oklch(50% 0.12 195 / 0.25) 60%, transparent)"
+            aria-hidden="true"
+          >
+          </div>
+          <div class="overflow-hidden rounded-xl border border-border bg-bg-subtle shadow-[0_40px_120px_-30px_oklch(0%_0_0/0.85)]">
+            <!-- window chrome -->
+            <div class="flex h-9 items-center gap-2 border-b border-border-subtle bg-bg-elevated/60 px-3.5">
+              <span class="size-2.5 rounded-full bg-[oklch(60%_0.16_25)]"></span>
+              <span class="size-2.5 rounded-full bg-[oklch(72%_0.14_85)]"></span>
+              <span class="size-2.5 rounded-full bg-[oklch(70%_0.14_145)]"></span>
+              <span class="mx-auto font-mono text-[11px] text-fg-quaternary">127.0.0.1:4471 — Sift</span>
+            </div>
+            <img
+              src={`${base}/shots/inbox.png`}
+              alt="The Sift inbox: a scored, ranked feed of AI items alongside a reading pane"
+              width="2400"
+              height="1500"
+              loading="eager"
+              decoding="async"
+              class="block w-full"
+            />
+          </div>
+        </div>
+        <figcaption class="mt-4 text-center font-mono text-[11px] text-fg-quaternary">
+          The inbox, ranked by signal. Real data from the bundled demo corpus.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════ problem ══ -->
+  <section class="border-y border-border-subtle bg-bg-subtle/30 py-16">
+    <div class="container-page">
+      <div class="reveal grid gap-10 md:grid-cols-[1fr_1.15fr] md:items-center">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">The problem</p>
+          <h2 class="mt-3 text-balance text-[1.9rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.35rem]">
+            Following AI properly is a part-time job you did not apply for.
+          </h2>
+          <p class="text-pretty mt-4 text-[14.5px] leading-relaxed text-fg-secondary">
+            Six timelines, forty feeds, three languages. The same launch reported twenty times. Engagement bait ranked above
+            the benchmark table that actually answers your question. Bookmarks you will never open again because there is no
+            way to search them.
+          </p>
+          <p class="text-pretty mt-3 text-[14.5px] leading-relaxed text-fg-secondary">
+            Every existing tool solves one slice: a reader that cannot rank, an aggregator that cannot search your own
+            highlights, a scraper with no opinion about what is worth reading. Sift is the whole loop, and it runs locally
+            so your reading history is nobody's dataset.
+          </p>
+        </div>
+
+        <div class="reveal-stagger grid gap-3 sm:grid-cols-2">
+          {
+            [
+              { stat: '20×', label: 'duplicate reports of one launch, folded to one canonical item with an echo count' },
+              { stat: '6', label: 'explainable score components, every one visible and tunable' },
+              { stat: '<15ms', label: 'hybrid search across a hundred thousand items, exact not approximate' },
+              { stat: '0', label: 'native dependencies, accounts, trackers or required API keys' },
+            ].map((item) => (
+              <div class="card p-4">
+                <p class="font-mono text-[1.75rem] font-semibold leading-none text-accent-300">{item.stat}</p>
+                <p class="text-pretty mt-2.5 text-[12.5px] leading-relaxed text-fg-tertiary">{item.label}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ how it works ══ -->
+  <section id="how" class="scroll-mt-20 py-20">
+    <div class="container-page">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">How it works</p>
+        <h2 class="mt-3 text-balance text-[2rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.5rem]">
+          Collect, score, then actually work with it.
+        </h2>
+        <p class="text-pretty mx-auto mt-4 max-w-xl text-[14.5px] leading-relaxed text-fg-secondary">
+          Three stages, one pipeline. Each one is a few hundred lines you can read and change.
+        </p>
+      </div>
+
+      <div class="reveal-stagger mt-14 grid gap-5 md:grid-cols-3">
+        {
+          [
+            {
+              step: '01',
+              title: 'Collect',
+              body: 'Eight built-in connectors poll public, keyless endpoints on a schedule. The browser extension covers what needs your own session — X and 小红书 — by reading the JSON your browser already received.',
+              detail: 'canonicalise → filter → enrich → fingerprint',
+            },
+            {
+              step: '02',
+              title: 'Score',
+              body: 'Every item gets six components, a per-source trust multiplier and an engagement-bait demerit. Duplicates fold behind their canonical item. Anything below your threshold is archived, not discarded.',
+              detail: 'dedup → embed → score → store',
+            },
+            {
+              step: '03',
+              title: 'Work',
+              body: 'Triage by keyboard, search in either language, highlight and tag, ask questions against your own corpus, generate a cited briefing, and export everything as Markdown, JSON or CSV.',
+              detail: 'triage → search → synthesise → share',
+            },
+          ].map((stage) => (
+            <div class="card relative overflow-hidden p-6">
+              <span class="absolute right-4 top-3 font-mono text-[3.5rem] font-semibold leading-none text-fg opacity-[0.045]">
+                {stage.step}
+              </span>
+              <h3 class="text-[17px] font-semibold tracking-[-0.015em]">{stage.title}</h3>
+              <p class="text-pretty mt-2.5 text-[13.5px] leading-relaxed text-fg-tertiary">{stage.body}</p>
+              <p class="mt-4 border-t border-border-subtle pt-3 font-mono text-[11px] text-fg-quaternary">{stage.detail}</p>
+            </div>
+          ))
+        }
+      </div>
+
+      <!-- sources -->
+      <div class="reveal mt-12">
+        <p class="mb-4 text-center font-mono text-[11px] uppercase tracking-widest text-fg-quaternary">Sources out of the box</p>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          {
+            sources.map((source) => (
+              <span class="flex items-center gap-2 rounded-lg border border-border-subtle bg-bg-subtle px-3 py-1.5 text-[12.5px] text-fg-secondary">
+                <span class="size-[7px] rounded-full" style={`background:${source.colour}`} />
+                {source.label}
+                <span class="font-mono text-[10px] text-fg-quaternary">{source.via}</span>
+              </span>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════ scoring ══ -->
+  <section id="scoring" class="scroll-mt-20 border-y border-border-subtle bg-bg-subtle/30 py-20">
+    <div class="container-page">
+      <div class="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+        <div class="reveal lg:sticky lg:top-24">
+          <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Signal scoring</p>
+          <h2 class="mt-3 text-balance text-[2rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.4rem]">
+            One number, and it shows its work.
+          </h2>
+          <p class="text-pretty mt-4 text-[14.5px] leading-relaxed text-fg-secondary">
+            Every item gets a 0–100 score answering one question: should this interrupt you? Six components, each squashed so
+            no single axis can be gamed into dominance, combined by weights you control.
+          </p>
+          <p class="text-pretty mt-3 text-[14.5px] leading-relaxed text-fg-secondary">
+            The breakdown is stored with the item, so the app can always answer <em class="text-fg">why is this a 92?</em>
+            without re-running anything. Move a slider and the whole library rescores in the background.
+          </p>
+
+          <div class="mt-6 rounded-lg border border-accent-600/25 bg-accent-muted/40 p-4">
+            <p class="font-mono text-[11px] uppercase tracking-wider text-accent-300">Measured on the demo corpus</p>
+            <p class="text-pretty mt-2 text-[13px] leading-relaxed text-fg-secondary">
+              A thread with benchmark numbers, an ablation and a repo link scores <strong class="text-fg">66</strong>.
+              A post with 32,000 likes, nine hashtags and “this will blow your mind” scores
+              <strong class="text-fg">31</strong> — the noise penalty and the depth term both bite.
+            </p>
+          </div>
+
+          <a
+            href={`${repo}/blob/main/docs/SCORING.md`}
+            class="mt-6 inline-flex items-center gap-1.5 text-[13px] text-accent-300 transition-colors hover:text-accent-400"
+          >
+            Read the scoring model, with the actual formulas
+            <span>→</span>
+          </a>
+        </div>
+
+        <div class="reveal-stagger space-y-3">
+          {
+            components.map((component) => (
+              <div class="card p-4">
+                <div class="flex items-baseline justify-between gap-3">
+                  <h3 class="text-[14.5px] font-semibold">{component.name}</h3>
+                  <span class="shrink-0 font-mono text-[11px] text-fg-quaternary">{component.weight}% default weight</span>
+                </div>
+                <div class="mt-2.5 h-1 overflow-hidden rounded-full bg-bg-inset">
+                  <div
+                    class="h-full rounded-full"
+                    style={`width:${(component.weight / 26) * 100}%;background:${component.colour};opacity:.85`}
+                  />
+                </div>
+                <p class="text-pretty mt-3 text-[13px] leading-relaxed text-fg-tertiary">{component.blurb}</p>
+              </div>
+            ))
+          }
+          <div class="rounded-lg border border-border-subtle bg-bg-inset/60 p-4">
+            <p class="text-pretty text-[12.5px] leading-relaxed text-fg-quaternary">
+              Then: multiplied by a per-source trust factor you set, and reduced by up to 30% for recognisable
+              engagement-bait patterns — emoji density, hashtag stuffing, giveaway language, in English and Chinese.
+              Capped at 30% because bait wrapped around real news is still real news.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════ features ══ -->
+  <section id="features" class="scroll-mt-20 py-20">
+    <div class="container-page">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Features</p>
+        <h2 class="mt-3 text-balance text-[2rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.5rem]">
+          Built for someone who reads for a living.
+        </h2>
+      </div>
+
+      <div class="reveal-stagger mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          features.map((feature) => (
+            <div class="card group p-5 transition-colors duration-300 hover:border-accent-600/30">
+              <div class="mb-3.5 flex size-9 items-center justify-center rounded-lg border border-border-subtle bg-bg-inset text-accent-400 transition-colors group-hover:border-accent-600/30">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  {feature.icon === 'search' && <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>}
+                  {feature.icon === 'layers' && <><path d="m12 2 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5" /><path d="m3 17 9 5 9-5" /></>}
+                  {feature.icon === 'info' && <><circle cx="12" cy="12" r="9" /><path d="M12 16v-5M12 8h.01" /></>}
+                  {feature.icon === 'message' && <><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></>}
+                  {feature.icon === 'keyboard' && <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" /></>}
+                  {feature.icon === 'trend' && <><path d="m3 17 6-6 4 4 8-8" /><path d="M15 7h6v6" /></>}
+                </svg>
+              </div>
+              <h3 class="text-[14.5px] font-semibold tracking-[-0.01em]">{feature.title}</h3>
+              <p class="text-pretty mt-2 text-[13px] leading-relaxed text-fg-tertiary">{feature.body}</p>
+            </div>
+          ))
+        }
+      </div>
+
+      <!-- second screenshot -->
+      <figure class="reveal mt-16">
+        <div class="overflow-hidden rounded-xl border border-border bg-bg-subtle shadow-[0_30px_90px_-30px_oklch(0%_0_0/0.8)]">
+          <img
+            src={`${base}/shots/trends.png`}
+            alt="The Trends view: topic momentum, source mix, top authors and an entity cloud"
+            width="2400"
+            height="1500"
+            loading="lazy"
+            decoding="async"
+            class="block w-full"
+          />
+        </div>
+        <figcaption class="mt-4 text-center font-mono text-[11px] text-fg-quaternary">
+          Trends — topic momentum against the previous window, computed locally.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ bilingual ══ -->
+  <section class="border-y border-border-subtle bg-bg-subtle/30 py-20">
+    <div class="container-page">
+      <div class="reveal grid gap-10 md:grid-cols-2 md:items-center">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Bilingual by construction</p>
+          <h2 class="mt-3 text-balance text-[1.9rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.3rem]">
+            中文和英文，一视同仁。
+          </h2>
+          <p class="text-pretty mt-4 text-[14.5px] leading-relaxed text-fg-secondary">
+            Half the interesting AI writing is in Chinese, and most tools index it into oblivion — SQLite's default
+            tokeniser treats a whole Chinese sentence as one token, so Chinese search silently returns nothing.
+          </p>
+          <p class="text-pretty mt-3 text-[14.5px] leading-relaxed text-fg-secondary">
+            Sift indexes a parallel column of character bigrams and translates queries into ordered bigram phrases, which is
+            exact substring matching. A full-sentence question has its interrogative affixes stripped and becomes overlapping
+            windows, so 「怎么降低推理成本」 finds the note titled 「大模型推理成本优化实战」.
+          </p>
+        </div>
+
+        <div class="reveal card overflow-hidden">
+          <div class="border-b border-border-subtle px-4 py-2.5">
+            <span class="font-mono text-[11px] text-fg-quaternary">query → FTS5 MATCH</span>
+          </div>
+          <div class="space-y-4 p-4 font-mono text-[12px] leading-relaxed">
+            <div>
+              <p class="text-fg-secondary">怎么降低推理成本</p>
+              <p class="mt-1 text-fg-quaternary">↓ strip 怎么, window, phrase-match</p>
+              <p class="mt-1 break-all text-accent-300">cjk : ("降低 低推 推理" OR "推理 理成 成本" ...)</p>
+            </div>
+            <div class="border-t border-border-subtle pt-4">
+              <p class="text-fg-secondary">vLLM 推理</p>
+              <p class="mt-1 text-fg-quaternary">↓ mixed script splits cleanly</p>
+              <p class="mt-1 break-all text-accent-300">cjk : "推理" AND "vllm"*</p>
+            </div>
+            <div class="border-t border-border-subtle pt-4">
+              <p class="text-fg-secondary">making models cheaper to run</p>
+              <p class="mt-1 text-fg-quaternary">↓ no keyword overlap, so concept expansion</p>
+              <p class="mt-1 text-accent-300">topic:efficiency → 12 items, exact match first</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════ privacy ══ -->
+  <section id="privacy" class="scroll-mt-20 py-20">
+    <div class="container-page">
+      <div class="reveal mx-auto max-w-3xl text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Local-first, not local-ish</p>
+        <h2 class="mt-3 text-balance text-[2rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.4rem]">
+          Your reading history is nobody's dataset.
+        </h2>
+      </div>
+
+      <div class="reveal-stagger mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2">
+        {
+          [
+            { t: 'One file', b: 'Everything lives in ./data/sift.db. Back it up by copying it; delete it to start over. No hidden state, no cloud mirror.' },
+            { t: 'Loopback only', b: 'The server binds to 127.0.0.1. CORS admits extension origins and localhost, nothing else.' },
+            { t: 'Keys are write-only', b: 'An API key you paste goes into the local database and is never returned by any endpoint — only whether one is set.' },
+            { t: 'No telemetry', b: 'Not opt-out, absent. There is no analytics code in the repository. Grep for it.' },
+            { t: 'Narrow permissions', b: 'The extension asks for three hosts plus loopback. No <all_urls>, no tabs, no cookie access. Page capture rides on activeTab.' },
+            { t: 'Real export', b: 'Markdown with your highlights, JSON with every field, CSV for a spreadsheet, OPML for your feeds. A tool that cannot hand your data back is a silo.' },
+          ].map((item) => (
+            <div class="flex gap-3.5 rounded-lg border border-border-subtle bg-bg-subtle/60 p-4">
+              <svg class="mt-0.5 size-4 shrink-0 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m5 12 5 5L20 7" />
+              </svg>
+              <div>
+                <h3 class="text-[13.5px] font-semibold">{item.t}</h3>
+                <p class="text-pretty mt-1 text-[12.5px] leading-relaxed text-fg-tertiary">{item.b}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════ get started ══ -->
+  <section id="start" class="scroll-mt-20 border-t border-border-subtle bg-bg-subtle/30 py-20">
+    <div class="container-page">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Get started</p>
+        <h2 class="mt-3 text-balance text-[2rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.5rem]">
+          Four commands, then it is yours.
+        </h2>
+        <p class="text-pretty mx-auto mt-4 max-w-xl text-[14.5px] leading-relaxed text-fg-secondary">
+          Needs Node 24 or newer and pnpm. No database to provision, no key to obtain, nothing to sign up for.
+        </p>
+      </div>
+
+      <div class="reveal mx-auto mt-10 max-w-2xl space-y-3">
+        {
+          [
+            { cmd: 'git clone https://github.com/sift-app/sift && cd sift', note: 'Clone it.' },
+            { cmd: 'pnpm install', note: 'Zero native modules, so this cannot fail on a compile step.' },
+            { cmd: 'pnpm seed', note: 'Optional: 37 realistic items so you can judge it before configuring anything.' },
+            { cmd: 'pnpm dev', note: 'Starts the API and the app, then opens your browser.' },
+          ].map((step, index) => (
+            <div class="flex items-center gap-3 rounded-lg border border-border-subtle bg-bg-inset/70 px-4 py-3">
+              <span class="font-mono text-[11px] text-fg-quaternary">{String(index + 1).padStart(2, '0')}</span>
+              <div class="min-w-0 flex-1">
+                <code class="block overflow-x-auto whitespace-nowrap font-mono text-[12.5px] text-accent-300">{step.cmd}</code>
+                <p class="mt-1 text-[11.5px] text-fg-quaternary">{step.note}</p>
+              </div>
+              <button
+                type="button"
+                data-copy={step.cmd}
+                data-label="Copy"
+                class="shrink-0 rounded-md border border-border px-2 py-1 font-mono text-[10.5px] text-fg-tertiary transition-colors hover:bg-bg-subtle hover:text-fg"
+              >
+                Copy
+              </button>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="reveal mx-auto mt-6 max-w-2xl rounded-lg border border-border-subtle bg-bg-subtle p-4">
+        <p class="text-[13px] font-semibold">Then, for X and 小红书</p>
+        <p class="text-pretty mt-1.5 text-[12.5px] leading-relaxed text-fg-tertiary">
+          Run <code class="mono-chip">pnpm build:extension</code>, open <code class="mono-chip">chrome://extensions</code>,
+          enable developer mode, and load <code class="mono-chip">apps/extension/.output/chrome-mv3</code> unpacked. Browse
+          as you normally would — posts you scroll past are scored and filed. Press
+          <code class="mono-chip">⌥⇧S</code> on any page to capture it.
+        </p>
+      </div>
+
+      <div class="reveal mt-12 text-center">
+        <a
+          href={repo}
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-fg px-6 text-[14px] font-medium text-bg transition-all duration-200 hover:brightness-90 active:scale-[0.98]"
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.07-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+            ></path>
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════ FAQ ══ -->
+  <section class="py-20">
+    <div class="container-page">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Questions</p>
+        <h2 class="mt-3 text-balance text-[2rem] font-semibold leading-tight tracking-[-0.025em]">
+          The things people actually ask.
+        </h2>
+      </div>
+
+      <div class="reveal mx-auto mt-10 max-w-3xl divide-y divide-border-subtle">
+        {
+          faqs.map((faq) => (
+            <details class="group py-4">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-[14.5px] font-medium marker:content-none">
+                {faq.q}
+                <svg
+                  class="size-4 shrink-0 text-fg-quaternary transition-transform duration-300 group-open:rotate-45"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </summary>
+              <p class="text-pretty mt-3 max-w-[62ch] text-[13.5px] leading-relaxed text-fg-tertiary">{faq.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,38 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. pnpm seed
+        2. Search for "…"
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: health
+    attributes:
+      label: Health output
+      description: Output of `curl -s localhost:4471/api/health`
+      render: json
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: Run with `SIFT_LOG=debug` and paste anything relevant.
+      render: shell
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: macOS 15.3, Node 24.14.0, pnpm 11.18.0, Chrome 151

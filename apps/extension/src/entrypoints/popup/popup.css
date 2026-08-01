@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+
+/* The popup borrows Sift's tokens but stands alone — it cannot import the web
+   app's stylesheet across package boundaries in an extension bundle. */
+:root {
+  --bg: oklch(14.5% 0.012 285);
+  --bg-subtle: oklch(17% 0.013 285);
+  --bg-elevated: oklch(20% 0.014 285);
+  --bg-inset: oklch(12% 0.01 285);
+  --bg-hover: oklch(23% 0.015 285);
+  --border-subtle: oklch(24% 0.012 285);
+  --border: oklch(30% 0.014 285);
+  --fg: oklch(97% 0.004 285);
+  --fg-secondary: oklch(76% 0.011 285);
+  --fg-tertiary: oklch(62% 0.013 285);
+  --fg-quaternary: oklch(50% 0.014 285);
+  --accent: oklch(64% 0.18 285);
+  --accent-muted: oklch(30% 0.09 285 / 0.5);
+  --success: oklch(72% 0.16 158);
+  --warning: oklch(80% 0.15 78);
+  --danger: oklch(66% 0.2 18);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-inset: var(--bg-inset);
+  --color-bg-hover: var(--bg-hover);
+  --color-border-subtle: var(--border-subtle);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-tertiary: var(--fg-tertiary);
+  --color-fg-quaternary: var(--fg-quaternary);
+  --color-accent: var(--accent);
+  --color-accent-muted: var(--accent-muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  border-color: var(--border-subtle);
+}
+
+body {
+  margin: 0;
+  width: 330px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.animate-pop {
+  animation: pop-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}

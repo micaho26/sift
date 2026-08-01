@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push supersedes an in-flight run on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          # 24+ is a hard requirement: the whole persistence layer is node:sqlite.
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Build extension
+        run: pnpm build:extension
+
+      - name: Smoke test the server
+        # Seed, boot, and assert the API actually answers — a build that compiles
+        # but cannot serve a request has not been verified.
+        run: |
+          pnpm seed
+          SIFT_PORT=4471 SIFT_LOG=quiet SIFT_NO_SCHEDULER=1 pnpm --filter sift-server start &
+          for i in $(seq 1 40); do
+            if curl -sf localhost:4471/api/health > /dev/null; then break; fi
+            sleep 0.5
+          done
+
+          echo "── health ──"
+          curl -sf localhost:4471/api/health | tee /tmp/health.json
+          node -e '
+            const h = require("/tmp/health.json");
+            if (h.service !== "sift") throw new Error("handshake missing");
+            if (!h.db.items) throw new Error("seed produced no items");
+            if (!h.db.fullTextSearch) throw new Error("FTS unavailable");
+            console.log(`\nOK: ${h.db.items} items, ${h.embeddings.provider}/${h.embeddings.dimensions}d`);
+          '
+
+          echo "── English search ──"
+          curl -sf 'localhost:4471/api/search?q=sparse+attention&limit=3' \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+                const r=JSON.parse(s);
+                if(!r.items.length) throw new Error("English search returned nothing");
+                console.log(`OK: ${r.items.length} results in ${r.tookMs}ms`);
+              })'
+
+          echo "── Chinese search ──"
+          curl -sfG 'localhost:4471/api/search' --data-urlencode 'q=量化' --data-urlencode 'limit=3' \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+                const r=JSON.parse(s);
+                if(!r.items.length) throw new Error("Chinese search returned nothing — CJK indexing is broken");
+                console.log(`OK: ${r.items.length} results`);
+              })'
+
+          echo "── ingest + dedup ──"
+          curl -sf -X POST localhost:4471/api/ingest -H 'content-type: application/json' \
+            -d '{"items":[{"url":"https://x.com/ci/status/1","source":"x","kind":"post","title":"CI probe","content":"A probe item with enough text to survive the pre-filter."}],"collector":"ci"}' \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+                const r=JSON.parse(s);
+                if(r.created !== 1) throw new Error(`expected 1 created, got ${r.created}`);
+                console.log("OK: ingested");
+              })'
+          curl -sf -X POST localhost:4471/api/ingest -H 'content-type: application/json' \
+            -d '{"items":[{"url":"https://twitter.com/ci/status/1?s=20","source":"x","kind":"post","title":"CI probe","content":"A probe item with enough text to survive the pre-filter."}],"collector":"ci"}' \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+                const r=JSON.parse(s);
+                if(r.created !== 0) throw new Error("URL canonicalisation failed: an alias created a second item");
+                console.log("OK: twitter.com alias deduplicated onto x.com");
+              })'

@@ -1,0 +1,18 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Sift has zero native *runtime* dependencies by design — nothing needs node-gyp,
+# so `pnpm install` cannot fail on a compile step. SQLite comes from Node 24's
+# built-in `node:sqlite`.
+#
+# These are build-time tools that ship prebuilt binaries and need their install
+# script to unpack them. Listing them explicitly means a fresh clone installs
+# without an interactive approval prompt.
+allowBuilds:
+  esbuild: true
+  "@tailwindcss/oxide": true
+
+onlyBuiltDependencies:
+  - esbuild
+  - "@tailwindcss/oxide"
