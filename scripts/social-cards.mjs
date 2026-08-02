@@ -21,13 +21,9 @@
  * randomness — so re-running it produces a byte-identical file and a no-op diff.
  */
 
-import { chromium } from 'playwright'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
+import { C, logoMark, renderCards, root } from './lib/cards.mjs'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const fontDir = join(root, 'apps/site/public/fonts')
 // Written into the site's public/ rather than a top-level assets/ folder so there
 // is one copy, not two: the showcase page offers these as downloads, and the same
 // files are what gets uploaded to GitHub's social-preview setting.
@@ -35,54 +31,6 @@ const outDir = join(root, 'apps/site/public/social')
 
 const WIDTH = 1280
 const HEIGHT = 640
-
-/** The site's tokens, resolved to sRGB — a headless Chromium renders OKLCH, but
- *  hex keeps the card identical to what shipped even if the tokens are retuned. */
-const C = {
-  bg: '#0d0d14',
-  bgSubtle: '#16161f',
-  bgElevated: '#1c1c27',
-  border: '#2b2b38',
-  borderSubtle: '#22222d',
-  fg: '#f7f7fa',
-  fg2: '#b9b9c6',
-  fg3: '#8b8b9c',
-  violet: '#a78bfa',
-  violetDeep: '#6d4df0',
-  teal: '#4fd1c5',
-  green: '#72c96b',
-  amber: '#f0b429',
-  red: '#f0656b',
-}
-
-async function inlineFont(file, family, weightRange) {
-  const b64 = (await readFile(join(fontDir, file))).toString('base64')
-  return `@font-face{font-family:'${family}';font-style:normal;font-weight:${weightRange};src:url(data:font/woff2;base64,${b64}) format('woff2')}`
-}
-
-/** Chrome's shipped fonts vary by machine and CI image; embedding the same woff2
- *  the site serves is what makes the render reproducible anywhere.
- *
- *  Only the latin faces are embedded. The one CJK string on these cards ("EN +
- *  中文") falls through to a system font, so run this on a machine that has one —
- *  a bare Linux container would render tofu. The outputs are committed, so that
- *  only matters if you regenerate. */
-async function fontCss() {
-  return [
-    await inlineFont('inter-latin.woff2', 'Inter', '400 700'),
-    await inlineFont('jetbrains-mono-latin.woff2', 'JetBrains Mono', '400 600'),
-  ].join('')
-}
-
-const logoMark = (size, accent) => `
-  <svg width="${size}" height="${size}" viewBox="0 0 96 96">
-    <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="${accent[0]}"/><stop offset="100%" stop-color="${accent[1]}"/>
-    </linearGradient></defs>
-    <rect width="96" height="96" rx="22" fill="#0e0e15"/>
-    <path d="M18 48 L48 18 L78 48 L48 78 Z" fill="url(#lg)"/>
-    <path d="M33 48 L48 33 L63 48 L48 63 Z" fill="#0e0e15" fill-opacity="0.55"/>
-  </svg>`
 
 /** A ranked feed, abstracted: five rows at decaying opacity with a score pill.
  *  It says "this thing orders things" without needing a legible screenshot. */
@@ -94,7 +42,7 @@ const rankedFeedArt = () => {
     { score: '58', w: 86, o: 0.4 },
     { score: '41', w: 90, o: 0.24 },
   ]
-  return `<div class="art">${rows
+  return `<div class="art" data-fit="art">${rows
     .map(
       (r, i) => `<div class="row" style="opacity:${r.o};width:${r.w}%">
         <span class="pill">${r.score}</span>
@@ -109,10 +57,10 @@ const scorecardArt = () => {
   const cells = [
     { k: 'C', label: 'Current qtr', dot: C.green, v: '+41.6%' },
     { k: 'A', label: 'Annual + ROE', dot: C.amber, v: '+121%' },
-    { k: 'S', label: 'Supply', dot: C.amber, v: '×1.0' },
+    { k: 'S', label: 'Supply', dot: C.amber, v: '\u00d71.0' },
     { k: 'L', label: 'Rel. strength', dot: C.green, v: '+46.3%' },
   ]
-  return `<div class="grid">${cells
+  return `<div class="grid" data-fit="art">${cells
     .map(
       (c) => `<div class="cell">
         <div class="cellTop"><span class="letter">${c.k}</span><span class="dot" style="background:${c.dot}"></span></div>
@@ -180,8 +128,8 @@ function card({ accent, wordmark, headline, sub, chips, command, art, artStyles 
     .cmd .prompt { color: ${accent[0]}; }
     .right { position: relative; flex: 0 0 400px; height: 100%; display: flex; align-items: center; }
     ${artStyles}
-  </style></head><body><div class="stage">
-    <div class="left">
+  </style></head><body><div class="stage" data-fit="stage">
+    <div class="left" data-fit="left">
       <div class="brand">${logoMark(58, accent)}<span class="wordmark">${wordmark}</span>${
         wordmark === 'Sift' ? '' : `<span class="owner">micaho26</span>`
       }</div>
@@ -190,7 +138,7 @@ function card({ accent, wordmark, headline, sub, chips, command, art, artStyles 
       <div class="chips">${chips.map((c, i) => `<span class="chip${i === 0 ? ' on' : ''}">${c}</span>`).join('')}</div>
       <div class="cmd"><span class="prompt">$</span>${command}</div>
     </div>
-    <div class="right">${art}</div>
+    <div class="right" data-fit="right">${art}</div>
   </div></body></html>`
 }
 
@@ -247,34 +195,4 @@ const CARDS = [
   },
 ]
 
-const browser = await chromium.launch()
-const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 })
-const css = await fontCss()
-await mkdir(outDir, { recursive: true })
-
-for (const { file, html } of CARDS) {
-  await page.setContent(html.replace('<style>', `<style>${css}`), { waitUntil: 'load' })
-  await page.evaluate(() => document.fonts.ready)
-
-  // The first render of these clipped the command box off the bottom, and a PNG
-  // does not complain — it just ships wrong. So measure instead of eyeballing:
-  // any copy edit that makes a column outgrow the 640px frame fails the build.
-  const overflow = await page.evaluate(() => {
-    const bad = []
-    for (const sel of ['.left', '.right', '.stage']) {
-      const el = document.querySelector(sel)
-      if (el.scrollHeight > el.clientHeight + 1) bad.push(`${sel} overflows by ${el.scrollHeight - el.clientHeight}px`)
-    }
-    if (document.body.scrollWidth > window.innerWidth + 1) bad.push('body overflows horizontally')
-    return bad
-  })
-  if (overflow.length) throw new Error(`${file}: ${overflow.join('; ')}`)
-
-  const png = await page.screenshot({ type: 'png' })
-  await writeFile(join(outDir, file), png)
-  const kb = (png.byteLength / 1024).toFixed(0)
-  // GitHub rejects >1MB, so the number matters more than it looks.
-  console.log(`${file.padEnd(14)} ${WIDTH}x${HEIGHT}  ${kb} KB${png.byteLength > 1_000_000 ? '  ⚠ over GitHub 1MB limit' : ''}`)
-}
-
-await browser.close()
+await renderCards(CARDS, { outDir, width: WIDTH, height: HEIGHT, byteLimit: 1_000_000 })

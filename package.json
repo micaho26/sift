@@ -24,6 +24,7 @@
     "db:reset": "pnpm --filter sift-server db:reset",
     "screenshots": "node scripts/screenshots.mjs",
     "social-cards": "node scripts/social-cards.mjs",
+    "promo-cards": "node scripts/promo-cards.mjs",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist .turbo apps/*/.turbo"
   },
   "devDependencies": {
