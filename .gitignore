@@ -32,6 +32,11 @@ data/
 .env.*
 !.env.example
 
+# Agent config: the skills in .claude/skills/ are shared on purpose, but the
+# settings files hold machine-local permissions and MCP endpoints.
+.claude/settings.local.json
+.claude/*.local.json
+
 # os / editor
 .DS_Store
 Thumbs.db
