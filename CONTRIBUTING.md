@@ -5,7 +5,7 @@ Thanks for looking. Sift is small enough that one afternoon is genuinely enough 
 ## Setup
 
 ```bash
-git clone https://github.com/sift-app/sift && cd sift
+git clone https://github.com/micaho26/sift && cd sift
 pnpm install
 pnpm seed
 pnpm dev

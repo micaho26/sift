@@ -2,8 +2,8 @@
 import Base from '../layouts/Base.astro'
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '')
-const repo = 'https://github.com/sift-app/sift'
-const clone = 'git clone https://github.com/sift-app/sift && cd sift && pnpm install && pnpm seed && pnpm dev'
+const repo = 'https://github.com/micaho26/sift'
+const clone = 'git clone https://github.com/micaho26/sift && cd sift && pnpm install && pnpm seed && pnpm dev'
 
 /** The six scoring components, with the copy that explains each honestly. */
 const components = [
@@ -550,7 +550,7 @@ const faqs = [
       <div class="reveal mx-auto mt-10 max-w-2xl space-y-3">
         {
           [
-            { cmd: 'git clone https://github.com/sift-app/sift && cd sift', note: 'Clone it.' },
+            { cmd: 'git clone https://github.com/micaho26/sift && cd sift', note: 'Clone it.' },
             { cmd: 'pnpm install', note: 'Zero native modules, so this cannot fail on a compile step.' },
             { cmd: 'pnpm seed', note: 'Optional: 37 realistic items so you can judge it before configuring anything.' },
             { cmd: 'pnpm dev', note: 'Starts the API and the app, then opens your browser.' },

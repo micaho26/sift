@@ -15,7 +15,7 @@ import { parseFeed } from './feed-parser.ts'
 export type ConnectorContext = { source: SourceConfig }
 export type Connector = (context: ConnectorContext) => Promise<IngestItem[]>
 
-const USER_AGENT = 'Sift/0.1 (local-first AI news reader; +https://github.com/sift-app/sift)'
+const USER_AGENT = 'Sift/0.1 (local-first AI news reader; +https://github.com/micaho26/sift)'
 const TIMEOUT_MS = 20_000
 
 async function fetchText(url: string, headers: Record<string, string> = {}): Promise<string> {

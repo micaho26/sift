@@ -13,7 +13,7 @@ A local-first AI intelligence workstation. Harvest what matters from X, 小红�
 [![Native deps](https://img.shields.io/badge/native%20deps-0-72c96b.svg?style=flat-square)](#why-zero-native-dependencies)
 [![Tests](https://img.shields.io/badge/tests-52%20passing-72c96b.svg?style=flat-square)](#testing)
 
-[Quick start](#quick-start) · [How it works](#how-it-works) · [Signal scoring](#signal-scoring) · [Extension](#the-browser-extension) · [Architecture](docs/ARCHITECTURE.md) · [Website](https://sift-app.github.io/sift)
+[Quick start](#quick-start) · [How it works](#how-it-works) · [Signal scoring](#signal-scoring) · [Extension](#the-browser-extension) · [Architecture](docs/ARCHITECTURE.md) · [Website](https://micaho26.github.io/sift)
 
 </div>
 
@@ -45,7 +45,7 @@ Every tool solves one slice — a reader that cannot rank, an aggregator that ca
 Requires **Node 24+** and **pnpm**. Nothing else — no database to provision, no key to obtain.
 
 ```bash
-git clone https://github.com/sift-app/sift && cd sift
+git clone https://github.com/micaho26/sift && cd sift
 pnpm install     # zero native modules, so this cannot fail on a compile step
 pnpm seed        # optional: 37 realistic items to judge it before configuring
 pnpm dev         # starts the API + app and opens your browser
