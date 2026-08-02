@@ -1,0 +1,482 @@
+---
+/**
+ * The showcase page.
+ *
+ * Two audiences at once: someone deciding whether Sift is worth cloning, and the
+ * maintainer needing assets and copy to promote it. So every shot carries a
+ * caption that makes a *claim*, and the promo blocks are written to be copied
+ * verbatim rather than adapted.
+ */
+import Base from '../layouts/Base.astro'
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+const repo = 'https://github.com/micaho26/sift'
+
+/** Grouped in the order someone actually meets the product. */
+const flows = [
+  {
+    id: 'first-run',
+    label: 'First run',
+    lede: 'The hardest state to design for: a tool whose entire value is a corpus, and there is no corpus yet.',
+    shots: [
+      {
+        file: 'onboarding.png',
+        title: 'Three real choices, no tour',
+        claim:
+          'No modal carousel, no "let us show you around". Connect 13 curated public feeds, load a demo corpus to judge it before configuring anything, or install the extension. All three are reversible.',
+      },
+    ],
+  },
+  {
+    id: 'triage',
+    label: 'Read and triage',
+    lede: 'Two hundred items should be a few minutes, not an afternoon.',
+    shots: [
+      {
+        file: 'inbox.png',
+        title: 'The inbox, ranked by signal',
+        claim:
+          'Virtualised list on the left, reader on the right. J/K moves, S saves, E archives, X multi-selects. Every triage action is optimistic with six seconds of undo, so the row moves the instant you press the key.',
+      },
+      {
+        file: 'feed.png',
+        title: 'What a row actually tells you',
+        claim:
+          'Score with a fill bar, source dot, author, age, the two most meaningful engagement counters for that platform, derived topics, and an echo count when other sources reported the same story. It degrades cleanly at narrow widths — topics drop first.',
+      },
+      {
+        file: 'why-score.png',
+        title: 'Press W: why is this a 61?',
+        claim:
+          'All six components with their live values and weights, plus ranked prose reasons. The breakdown is stored with the item, so this needs no recomputation. A ranking you cannot interrogate is a ranking you cannot trust.',
+      },
+      {
+        file: 'light-theme.png',
+        title: 'Light theme, same system',
+        claim:
+          'One set of OKLCH tokens inverted, not a second stylesheet. Dark mode carries elevation with hairlines and an inner top highlight; light mode uses real shadows, because a drop shadow on near-black is invisible.',
+      },
+    ],
+  },
+  {
+    id: 'find',
+    label: 'Find anything',
+    lede: 'Four retrievers, fused by reciprocal rank. Chinese is a first-class citizen, not an afterthought.',
+    shots: [
+      {
+        file: 'command-palette.png',
+        title: '⌘K searches your library while you type',
+        claim:
+          'Live hybrid results inside the palette, so "I remember reading something about inference" is two keystrokes from being open. Semantic-only matches are badged, so you always know why something surfaced.',
+      },
+      {
+        file: 'search-chinese.png',
+        title: '中文搜索 that actually returns results',
+        claim:
+          'SQLite’s default tokeniser treats a whole Chinese sentence as one token, so most tools silently return nothing. Sift indexes character bigrams and turns queries into ordered bigram phrases — exact substring matching. 「怎么降低推理成本」 finds 「大模型推理成本优化实战」.',
+      },
+    ],
+  },
+  {
+    id: 'understand',
+    label: 'Understand and synthesise',
+    lede: 'The part every aggregator skips: turning a pile of captures into something you can act on.',
+    shots: [
+      {
+        file: 'trends.png',
+        title: 'Topic momentum, not topic volume',
+        claim:
+          '"Which topics are big" is always the same few. This shows which are accelerating against the previous window, with smoothing so a fresh install does not claim 17× growth on three items. Plus source mix, the voices whose work you keep, and an entity cloud.',
+      },
+      {
+        file: 'ask.png',
+        title: 'Ask, grounded strictly in your own corpus',
+        claim:
+          'Citations arrive before the first token and link back to the item, so every claim is checkable against the passage the model was actually shown. If the answer is not in your library, it says so rather than filling the gap from memory.',
+      },
+      {
+        file: 'briefing.png',
+        title: 'Briefings with every claim traceable',
+        claim:
+          'Themed sections, bracketed citations resolving to real items, generated daily or on demand. Works with no API key at all — the template path clusters and assembles locally.',
+      },
+    ],
+  },
+  {
+    id: 'collect',
+    label: 'Collect and share',
+    lede: 'Sources that need no key, plus an extension for the ones that need your own session.',
+    shots: [
+      {
+        file: 'sources.png',
+        title: '13 keyless connectors out of the box',
+        claim:
+          'Hacker News, arXiv, GitHub, Hugging Face papers, Reddit and seven curated feeds — every one a public endpoint needing no signup. Per-source trust multiplies the final score, and each can be polled on demand.',
+      },
+      {
+        file: 'extension-popup.png',
+        title: 'The extension reads what your browser already fetched',
+        claim:
+          'A MAIN-world script observes the page’s own fetch and XHR responses. Nothing is re-requested, no credentials are touched, no scraping traffic is generated. Three host permissions, no <all_urls>, no tabs, no cookies.',
+        narrow: true,
+      },
+      {
+        file: 'share-card.png',
+        title: 'Share cards rendered locally',
+        claim:
+          'SVG generated server-side with no headless browser and no canvas binding, rasterised to PNG in-page. Export also does Markdown with your highlights, JSON, CSV (BOM-prefixed so Excel opens Chinese correctly) and OPML.',
+      },
+      {
+        file: 'settings.png',
+        title: 'The scoring weights are yours',
+        claim:
+          'Six sliders. Move one and the whole library rescores in the background, streaming progress. API keys are write-only — stored locally and never returned by any endpoint.',
+      },
+    ],
+  },
+]
+
+/** Numbers that are measured, not estimated. Each is checkable from the repo. */
+const facts = [
+  { value: '0', label: 'native dependencies', note: 'SQLite is Node 24’s built-in node:sqlite' },
+  { value: '7.8s', label: 'clean-clone install', note: 'measured, no compile step to fail' },
+  { value: '52', label: 'tests passing', note: 'behaviour, not snapshot values' },
+  { value: '<15ms', label: 'hybrid search', note: 'exact retrieval, not approximate' },
+  { value: '168KB', label: 'web bundle, gzipped', note: 'no component library' },
+  { value: '10.5KB', label: 'content script', note: 'type-only imports from core' },
+]
+
+/** Ready to paste. Written to length, not truncated to fit. */
+const promo = [
+  {
+    channel: 'X / Twitter',
+    limit: '~270 chars',
+    lang: 'EN',
+    text: `Built Sift — a local-first AI intelligence workstation.
+
+Harvests from X, 小红书, HN, arXiv, GitHub. Scores every item on 6 explainable axes. Folds duplicates. Searches in English and Chinese.
+
+Zero native deps. No account. No telemetry. One SQLite file.
+
+github.com/micaho26/sift`,
+  },
+  {
+    channel: 'X / Twitter',
+    limit: '~250 字',
+    lang: '中文',
+    text: `做了个 Sift —— 本地优先的 AI 情报工作台。
+
+从推特、小红书、HN、arXiv、GitHub 采集，六个可解释维度打分，自动折叠重复，中英文都能搜。
+
+零原生依赖，不用注册，无遥测，全部数据就一个 SQLite 文件。
+
+github.com/micaho26/sift`,
+  },
+  {
+    channel: 'Hacker News',
+    limit: 'title + first comment',
+    lang: 'EN',
+    text: `Show HN: Sift – a local-first AI intelligence workstation
+
+I got tired of following AI across six timelines in three languages, seeing the same launch reported twenty times, and having bookmarks I could never search again.
+
+Sift collects from X, 小红书, Hacker News, arXiv, GitHub and RSS, then scores every item on six components — relevance, velocity, depth, novelty, authority, recency — and shows the full breakdown for any score. Press W and you see exactly why something is a 61.
+
+Two things I think are genuinely interesting:
+
+Deduplication is two-tier. SimHash with LSH banding catches verbatim reposts. But measured on my own corpus, a real repost sits at Hamming 22 while unrelated items sit at 27–31 — far too narrow to threshold. Cosine separates the same pair 0.60 vs 0.29, so tier two uses embeddings, gated on a shared named entity and a 72-hour window.
+
+Chinese search works. SQLite's unicode61 tokeniser treats a whole Chinese sentence as one token, so most tools silently return nothing for Chinese queries. Sift indexes a parallel column of character bigrams and turns queries into ordered bigram phrases, which is exact substring matching.
+
+Zero native dependencies — SQLite is Node 24's built-in node:sqlite, so install cannot fail on node-gyp. The vector index is a hand-written flat Float32Array scan doing exact KNN; at personal-corpus scale that beats an ANN index on every axis that matters.
+
+No account, no telemetry, no API key required. MIT.`,
+  },
+  {
+    channel: 'Reddit — r/selfhosted, r/LocalLLaMA',
+    limit: 'post',
+    lang: 'EN',
+    text: `Sift — local-first AI news workstation, zero native deps, works offline
+
+Everything lives in one SQLite file on your machine. No account, no telemetry, and no API key required — semantic search runs on a built-in hashing embedder, and summaries fall back to local extractive summarisation. Add Anthropic/OpenAI/Ollama only if you want written prose.
+
+Collects from Hacker News, arXiv, GitHub, Hugging Face papers, Reddit and RSS with no keys, plus a browser extension for X and 小红书 that reads the JSON your browser already received rather than re-requesting anything.
+
+Scores every item on six explainable axes and shows the full breakdown. Deduplicates the twenty accounts that all reported one launch. Searches in English and Chinese.
+
+git clone, pnpm install, pnpm dev. Install takes under 10 seconds because there is nothing to compile.
+
+github.com/micaho26/sift`,
+  },
+  {
+    channel: '小红书 / 即刻',
+    limit: '短文',
+    lang: '中文',
+    text: `每天追 AI 太累了：六个时间线、三种语言、同一个发布被转二十遍，收藏夹存了就再也搜不到。
+
+所以做了 Sift，一个本地跑的 AI 情报工作台：
+
+· 从推特、小红书、HN、arXiv、GitHub 自动采集
+· 每条内容六个维度打分（相关度／传播速度／信息密度／新颖度／作者权重／时效），按 W 能看到每个维度的具体数值和原因
+· 自动折叠重复报道，保留一条 + 回声数
+· 中英文都能搜（大多数工具中文搜索直接返回空，因为 SQLite 默认分词把整句中文当一个词）
+· 全部数据一个 SQLite 文件，不用注册，无遥测，不填 API key 也能用
+
+零原生依赖，clone 下来 install 不到 10 秒，一条命令启动。MIT 开源。
+
+github.com/micaho26/sift`,
+  },
+]
+
+const assets = [
+  { file: 'logo.svg', label: 'Logo', note: 'SVG, transparent' },
+  { file: 'og.png', label: 'Social card', note: '1200×630, 2x' },
+  { file: 'shots/inbox.png', label: 'Hero screenshot', note: '3200×2000' },
+  { file: 'shots/trends.png', label: 'Trends screenshot', note: '3200×2000' },
+]
+---
+
+<Base
+  title="Sift — showcase"
+  description="Every screen of Sift, the local-first AI intelligence workstation, with the claim each one supports. Plus brand assets and ready-to-post copy."
+>
+  <!-- ═══════════════════════════════════════════════════════════ header ══ -->
+  <section class="pt-16 pb-10 sm:pt-24">
+    <div class="container-page">
+      <div class="mx-auto max-w-3xl text-center">
+        <a
+          href={base || '/'}
+          class="reveal inline-flex items-center gap-1.5 text-[12px] text-fg-tertiary transition-colors hover:text-fg"
+        >
+          <span>←</span> Back to the overview
+        </a>
+        <h1
+          class="reveal mt-5 text-balance text-[2.4rem] font-semibold leading-[1.06] tracking-[-0.035em] sm:text-[3.4rem]"
+          style="transition-delay: 60ms"
+        >
+          <span class="gradient-text">Every screen, and the claim it supports.</span>
+        </h1>
+        <p
+          class="reveal text-pretty mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-fg-secondary"
+          style="transition-delay: 120ms"
+        >
+          All of these are captured from the running app against the bundled demo corpus — nothing here is a mockup or a
+          composite. Regenerate them yourself with <code class="mono-chip">pnpm screenshots</code>.
+        </p>
+      </div>
+
+      <!-- facts -->
+      <div class="reveal-stagger mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {
+          facts.map((fact) => (
+            <div class="card p-3 text-center">
+              <p class="font-mono text-[1.35rem] font-semibold leading-none text-accent-300">{fact.value}</p>
+              <p class="mt-2 text-[11px] font-medium leading-tight text-fg-secondary">{fact.label}</p>
+              <p class="mt-1 text-[10px] leading-tight text-fg-quaternary">{fact.note}</p>
+            </div>
+          ))
+        }
+      </div>
+
+      <!-- jump nav -->
+      <nav class="reveal mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Sections">
+        {
+          flows.map((flow) => (
+            <a
+              href={`#${flow.id}`}
+              class="rounded-lg border border-border-subtle bg-bg-subtle px-3 py-1.5 text-[12px] text-fg-tertiary transition-colors hover:border-accent-600/40 hover:text-fg"
+            >
+              {flow.label}
+            </a>
+          ))
+        }
+        <a
+          href="#promo"
+          class="rounded-lg border border-accent-600/40 bg-accent-muted px-3 py-1.5 text-[12px] text-accent-300 transition-colors hover:brightness-125"
+        >
+          Copy for posting
+        </a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════ flows ══ -->
+  {
+    flows.map((flow, flowIndex) => (
+      <section id={flow.id} class:list={['scroll-mt-20 py-14', flowIndex % 2 === 1 && 'border-y border-border-subtle bg-bg-subtle/25']}>
+        <div class="container-page">
+          <div class="reveal mb-9 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">
+                {String(flowIndex + 1).padStart(2, '0')} · {flow.label}
+              </p>
+              <p class="text-pretty mt-2 max-w-2xl text-[15px] leading-relaxed text-fg-secondary">{flow.lede}</p>
+            </div>
+            <span class="shrink-0 font-mono text-[11px] text-fg-quaternary">
+              {flow.shots.length} {flow.shots.length === 1 ? 'screen' : 'screens'}
+            </span>
+          </div>
+
+          <div class="space-y-10">
+            {flow.shots.map((shot) => (
+              <figure class="reveal">
+                <div
+                  class:list={[
+                    'overflow-hidden rounded-xl border border-border bg-bg-subtle shadow-[0_28px_80px_-28px_oklch(0%_0_0/0.8)]',
+                    shot.narrow && 'mx-auto max-w-[340px]',
+                  ]}
+                >
+                  {/* A window chrome strip makes it read as software rather than a diagram. */}
+                  {!shot.narrow && (
+                    <div class="flex h-8 items-center gap-1.5 border-b border-border-subtle bg-bg-elevated/60 px-3">
+                      <span class="size-2 rounded-full bg-[oklch(60%_0.16_25)]" />
+                      <span class="size-2 rounded-full bg-[oklch(72%_0.14_85)]" />
+                      <span class="size-2 rounded-full bg-[oklch(70%_0.14_145)]" />
+                      <span class="mx-auto font-mono text-[10px] text-fg-quaternary">127.0.0.1:4471 — Sift</span>
+                    </div>
+                  )}
+                  <a href={`${base}/shots/${shot.file}`} target="_blank" rel="noopener noreferrer" aria-label={`Open ${shot.title} full size`}>
+                    <img
+                      src={`${base}/shots/${shot.file}`}
+                      alt={shot.title}
+                      loading="lazy"
+                      decoding="async"
+                      class="block w-full"
+                    />
+                  </a>
+                </div>
+                <figcaption class="mx-auto mt-4 max-w-3xl">
+                  <h3 class="text-[15px] font-semibold tracking-[-0.01em]">{shot.title}</h3>
+                  <p class="text-pretty mt-1.5 text-[13.5px] leading-relaxed text-fg-tertiary">{shot.claim}</p>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+    ))
+  }
+
+  <!-- ══════════════════════════════════════════════════════════ the site ══ -->
+  <section class="py-14">
+    <div class="container-page">
+      <div class="reveal mb-8">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">06 · The site itself</p>
+        <p class="text-pretty mt-2 max-w-2xl text-[15px] leading-relaxed text-fg-secondary">
+          Same design tokens as the app, so the product and its page read as one thing.
+        </p>
+      </div>
+      <div class="reveal grid gap-5 md:grid-cols-2">
+        {
+          [
+            { file: 'site-hero.png', title: 'Landing — above the fold' },
+            { file: 'site-scoring.png', title: 'Landing — the scoring model explained' },
+          ].map((shot) => (
+            <figure>
+              <div class="overflow-hidden rounded-xl border border-border bg-bg-subtle">
+                <a href={`${base}/shots/${shot.file}`} target="_blank" rel="noopener noreferrer">
+                  <img src={`${base}/shots/${shot.file}`} alt={shot.title} loading="lazy" decoding="async" class="block w-full" />
+                </a>
+              </div>
+              <figcaption class="mt-3 text-[12.5px] text-fg-tertiary">{shot.title}</figcaption>
+            </figure>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ promo ══ -->
+  <section id="promo" class="scroll-mt-20 border-y border-border-subtle bg-bg-subtle/25 py-16">
+    <div class="container-page">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Ready to post</p>
+        <h2 class="mt-3 text-balance text-[1.9rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.3rem]">
+          Copy, paste, ship.
+        </h2>
+        <p class="text-pretty mx-auto mt-4 max-w-xl text-[14.5px] leading-relaxed text-fg-secondary">
+          Written to each platform's length rather than truncated to fit, in English and Chinese. Every number in them is
+          measured and checkable from the repository.
+        </p>
+      </div>
+
+      <div class="reveal mx-auto mt-10 max-w-3xl space-y-4">
+        {
+          promo.map((block) => (
+            <div class="card overflow-hidden">
+              <div class="flex items-center gap-2.5 border-b border-border-subtle px-4 py-2.5">
+                <span class="text-[13px] font-semibold">{block.channel}</span>
+                <span class="mono-chip">{block.lang}</span>
+                <span class="font-mono text-[10px] text-fg-quaternary">{block.limit}</span>
+                <button
+                  type="button"
+                  data-copy={block.text}
+                  data-label="Copy"
+                  class="ml-auto shrink-0 rounded-md border border-border px-2.5 py-1 font-mono text-[11px] text-fg-tertiary transition-colors hover:bg-bg-elevated hover:text-fg"
+                >
+                  Copy
+                </button>
+              </div>
+              <pre class="overflow-x-auto whitespace-pre-wrap px-4 py-3.5 font-sans text-[13px] leading-relaxed text-fg-secondary">{block.text}</pre>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ assets ══ -->
+  <section class="py-16">
+    <div class="container-page">
+      <div class="reveal mx-auto max-w-2xl text-center">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-accent-400">Brand assets</p>
+        <h2 class="mt-3 text-balance text-[1.8rem] font-semibold leading-tight tracking-[-0.025em]">Take what you need.</h2>
+      </div>
+
+      <div class="reveal-stagger mx-auto mt-9 grid max-w-3xl gap-3 sm:grid-cols-2">
+        {
+          assets.map((asset) => (
+            <a
+              href={`${base}/${asset.file}`}
+              download
+              class="group flex items-center gap-3.5 rounded-xl border border-border-subtle bg-bg-subtle p-4 transition-colors hover:border-accent-600/40"
+            >
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-bg-inset text-fg-tertiary transition-colors group-hover:text-accent">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                  <path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16" />
+                </svg>
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-[13.5px] font-semibold">{asset.label}</span>
+                <span class="block font-mono text-[11px] text-fg-quaternary">{asset.note}</span>
+              </span>
+            </a>
+          ))
+        }
+      </div>
+
+      <div class="reveal mx-auto mt-4 max-w-3xl rounded-xl border border-border-subtle bg-bg-inset/60 p-4">
+        <p class="text-pretty text-[12.5px] leading-relaxed text-fg-quaternary">
+          The palette is OKLCH: accent <code class="mono-chip">oklch(64% 0.18 285)</code>, background
+          <code class="mono-chip">oklch(11% 0.012 285)</code>. Type is Inter with JetBrains Mono for anything numeric. All
+          screenshots are 2× retina, captured at 1600×1000 from the running app. Everything here is MIT — reuse it freely.
+        </p>
+      </div>
+
+      <div class="reveal mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a
+          href={repo}
+          class="flex h-11 items-center justify-center gap-2 rounded-lg bg-accent px-6 text-[14px] font-medium text-white transition-all hover:brightness-110 active:scale-[0.98]"
+        >
+          View the source
+        </a>
+        <a
+          href={base || '/'}
+          class="flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-bg-subtle/60 px-6 text-[14px] font-medium text-fg-secondary transition-all hover:text-fg"
+        >
+          Back to the overview
+        </a>
+      </div>
+    </div>
+  </section>
+</Base>
