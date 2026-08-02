@@ -107,11 +107,20 @@ together, and that is exactly what an integration branch exists to find.
 
 ```bash
 git push -u origin HEAD
-gh pr create --base main --fill
 ```
 
-Write the PR body properly — a summary of what changed and the verification you
-actually ran. If several logical changes are in one branch, list them.
+Write the PR body to a file, then pass `--body-file`:
+
+```bash
+gh pr create --base main --title "<subject>" --body-file /tmp/pr-body.md
+```
+
+Not `--fill` — that reuses the commit message, and a PR body has a different job:
+what changed, and **what verification actually ran**. And not an inline `--body
+"$(cat <<'EOF' … EOF)"` heredoc either; a body containing backticks or nested
+quotes fails with `unexpected EOF while looking for matching quote`, which is a
+confusing way to lose a paragraph you already wrote. Write the file with the file
+tool and point at it.
 
 **Never `git push --force` to a branch that already exists on origin** unless
 the user asks for it in those words. Force-pushing a branch someone else (or
