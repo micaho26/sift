@@ -164,7 +164,12 @@ export const DEFAULT_SOURCES: {
   { kind: 'rss', name: 'The Gradient', target: 'https://thegradientpub.substack.com/feed', intervalMinutes: 720, trust: 1 },
   { kind: 'rss', name: 'Google Research Blog', target: 'https://research.google/blog/rss/', intervalMinutes: 720, trust: 1.05 },
   { kind: 'rss', name: 'OpenAI News', target: 'https://openai.com/news/rss.xml', intervalMinutes: 360, trust: 1.05 },
-  { kind: 'rss', name: 'Anthropic News', target: 'https://www.anthropic.com/rss.xml', intervalMinutes: 360, trust: 1.05 },
+  // Anthropic used to be here. It publishes no feed — /rss.xml, /news/rss.xml,
+  // /feed.xml and /index.xml all 404, and the news page declares no <link
+  // rel="alternate"> — so the source shipped enabled and permanently red. Google
+  // DeepMind is the working equivalent for frontier-lab announcements; OpenAI is
+  // already covered above.
+  { kind: 'rss', name: 'Google DeepMind Blog', target: 'https://deepmind.google/blog/rss.xml', intervalMinutes: 360, trust: 1.05 },
   { kind: 'reddit', name: 'r/LocalLLaMA', target: 'LocalLLaMA', intervalMinutes: 60, trust: 0.95 },
   { kind: 'reddit', name: 'r/MachineLearning', target: 'MachineLearning', intervalMinutes: 120, trust: 0.95 },
 ]

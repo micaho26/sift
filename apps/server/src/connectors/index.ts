@@ -136,16 +136,62 @@ type GithubRepo = {
 }
 
 /**
+ * One search URL per qualifier in `target`.
+ *
+ * Exported so it can be tested without network I/O: the bug this replaced was a
+ * single URL built by pasting the whole target in, which GitHub rejects with 422
+ * as soon as the target contains `OR`, and nothing in the suite could see it.
+ */
+export function githubSearchUrls(target: string, since: string): string[] {
+  return (target || 'topic:llm')
+    .split(/\s+OR\s+/i)
+    .map((term) => term.trim())
+    .filter(Boolean)
+    .map((term) => {
+      const query = encodeURIComponent(`${term} created:>${since} stars:>40`)
+      return `https://api.github.com/search/repositories?q=${query}&sort=stars&order=desc&per_page=30`
+    })
+}
+
+/**
  * Repos created recently and already gathering stars — a much better novelty
  * signal than all-time star count, which just returns the same famous repos.
+ *
+ * One request per qualifier, because GitHub's search API rejects boolean
+ * operators between qualifiers outright:
+ *
+ *   topic:llm OR topic:ai-agents  ->  422 "Logical operators only apply to
+ *                                     text, not to qualifiers."
+ *
+ * The default source ships three topics, so this is three calls every four
+ * hours — comfortably inside the 10/minute unauthenticated search limit. A
+ * single-topic target still costs exactly one call.
  */
 const github: Connector = async ({ source }) => {
   const since = new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10)
-  const query = encodeURIComponent(`${source.target || 'topic:llm'} created:>${since} stars:>40`)
-  const url = `https://api.github.com/search/repositories?q=${query}&sort=stars&order=desc&per_page=30`
-  const data = await fetchJson<{ items: GithubRepo[] }>(url, { accept: 'application/vnd.github+json' })
+  const urls = githubSearchUrls(source.target, since)
 
-  return (data.items ?? []).map(
+  // Deduped by full_name: a repo tagged both llm and ai-agents comes back twice.
+  const byName = new Map<string, GithubRepo>()
+  const failures: string[] = []
+
+  for (const url of urls) {
+    try {
+      const data = await fetchJson<{ items: GithubRepo[] }>(url, { accept: 'application/vnd.github+json' })
+      for (const repo of data.items ?? []) byName.set(repo.full_name, repo)
+    } catch (error) {
+      // One throttled or malformed qualifier must not lose the others. The
+      // qualifier, not the whole URL, is what identifies which one broke.
+      const qualifier = decodeURIComponent(new URL(url).searchParams.get('q') ?? '').split(' ')[0]
+      failures.push(`${qualifier}: ${(error as Error).message}`)
+    }
+  }
+
+  if (!byName.size && failures.length) throw new Error(failures.join('; '))
+
+  const repos = [...byName.values()].sort((a, b) => b.stargazers_count - a.stargazers_count).slice(0, 30)
+
+  return repos.map(
     (repo): IngestItem => ({
       url: repo.html_url,
       source: 'github',

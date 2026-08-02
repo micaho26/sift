@@ -139,7 +139,9 @@ const flows = [
 /** Numbers that are measured, not estimated. Each is checkable from the repo. */
 const facts = [
   { value: '0', label: 'native dependencies', note: 'SQLite is Node 24’s built-in node:sqlite' },
-  { value: '7.8s', label: 'clean-clone install', note: 'measured, no compile step to fail' },
+  // A single decimal invites someone to check it and get a different number.
+  // Three clean-clone runs on a warm pnpm store: 6.6s, 8.6s, 9.4s.
+  { value: '<10s', label: 'clean-clone install', note: 'measured, no compile step to fail' },
   { value: '52', label: 'tests passing', note: 'behaviour, not snapshot values' },
   { value: '<15ms', label: 'hybrid search', note: 'exact retrieval, not approximate' },
   { value: '168KB', label: 'web bundle, gzipped', note: 'no component library' },

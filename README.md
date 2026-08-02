@@ -11,7 +11,7 @@ A local-first AI intelligence workstation. Harvest what matters from X, 小红�
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b7cf6.svg?style=flat-square)](LICENSE)
 [![Node](https://img.shields.io/badge/Node-24%2B-4fd1c5.svg?style=flat-square)](https://nodejs.org)
 [![Native deps](https://img.shields.io/badge/native%20deps-0-72c96b.svg?style=flat-square)](#why-zero-native-dependencies)
-[![Tests](https://img.shields.io/badge/tests-75%20passing-72c96b.svg?style=flat-square)](#testing)
+[![Tests](https://img.shields.io/badge/tests-79%20passing-72c96b.svg?style=flat-square)](#testing)
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Signal scoring](#signal-scoring) · [Extension](#the-browser-extension) · [Architecture](docs/ARCHITECTURE.md) · [Website](https://micaho26.github.io/sift/) · [Screenshot tour](https://micaho26.github.io/sift/showcase/)
 
@@ -369,10 +369,10 @@ sift/
 pnpm test
 ```
 
-75 tests, no mocks of our own logic:
+79 tests, no mocks of our own logic:
 
 - **`packages/core`** (39) — URL canonicalisation across platform aliases, SimHash discrimination, CJK query construction, the full scoring model including degenerate and adversarial inputs, RRF and MMR, the hashing embedder's determinism and ordering, taxonomy precision.
-- **`apps/server`** (23) — the schema against a real `node:sqlite` file: every table and index the repo queries, foreign-key cascade, upsert-preserves-user-state, the FTS5 Chinese bigram path end to end (including a natural-language question), the pigeonhole completeness of LSH banding at the duplicate threshold, and the vector index's exact-KNN ordering, tombstoned deletes, row reuse, facet filtering and dimension guards.
+- **`apps/server`** (27) — the schema against a real `node:sqlite` file: every table and index the repo queries, foreign-key cascade, upsert-preserves-user-state, the FTS5 Chinese bigram path end to end (including a natural-language question), the pigeonhole completeness of LSH banding at the duplicate threshold, and the vector index's exact-KNN ordering, tombstoned deletes, row reuse, facet filtering and dimension guards. Plus the default source list itself: every GitHub search URL is asserted free of a bare `OR`, because GitHub answers 422 to a logical operator between qualifiers and the shipped three-topic target was hitting it on every poll.
 - **`apps/extension`** (13) — the JSON walkers against realistic X and Xiaohongshu envelopes, including cyclic and over-deep input, Chinese count parsing (`1.2万` → 12000), and endpoint-matcher precision.
 
 The server tests deliberately do not mock SQLite. Every bug that layer has actually produced was a SQL-level one — a stray backtick inside a template literal, a column that did not exist, a tokenizer that swallowed a whole Chinese sentence — and none of those are reachable from a test that stubs the driver.

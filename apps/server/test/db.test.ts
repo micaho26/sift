@@ -38,6 +38,8 @@ const { simhash, simhashBands, hammingDistance, BAND_COUNT, DUPLICATE_THRESHOLD,
   '@sift/core'
 )
 const { cjkBigrams, buildFtsQuery } = await import('@sift/core')
+const { githubSearchUrls } = await import('../src/connectors/index.ts')
+const { DEFAULT_SOURCES } = await import('../src/repo/sources.ts')
 
 before(() => {
   getDb()
@@ -332,3 +334,50 @@ function flipBits(hex: string, bits: number[]): string {
   for (const bit of bits) value ^= 1n << BigInt(bit)
   return value.toString(16).padStart(16, '0')
 }
+
+describe('default sources and connector queries', () => {
+  test('no GitHub search URL contains a bare OR between qualifiers', () => {
+    // GitHub answers 422 "Logical operators only apply to text, not to
+    // qualifiers" — so the default three-topic target has to become three URLs,
+    // not one. This shipped enabled and permanently red.
+    const urls = githubSearchUrls('topic:llm OR topic:ai-agents OR topic:machine-learning', '2026-06-03')
+    assert.equal(urls.length, 3)
+    for (const url of urls) {
+      const q = decodeURIComponent(new URL(url).searchParams.get('q') ?? '')
+      assert.ok(!/\bOR\b/.test(q), `query still contains OR: ${q}`)
+      assert.match(q, /created:>2026-06-03/)
+      assert.match(q, /stars:>40/)
+    }
+    assert.deepEqual(
+      urls.map((u) => decodeURIComponent(new URL(u).searchParams.get('q') ?? '').split(' ')[0]),
+      ['topic:llm', 'topic:ai-agents', 'topic:machine-learning'],
+    )
+  })
+
+  test('a single-topic target still costs exactly one request', () => {
+    assert.equal(githubSearchUrls('topic:llm', '2026-06-03').length, 1)
+  })
+
+  test('an empty target falls back rather than querying for nothing', () => {
+    const urls = githubSearchUrls('', '2026-06-03')
+    assert.equal(urls.length, 1)
+    assert.match(decodeURIComponent(new URL(urls[0]!).searchParams.get('q') ?? ''), /^topic:llm /)
+  })
+
+  test('every default source has a plausible target for its kind', () => {
+    for (const source of DEFAULT_SOURCES) {
+      assert.ok(source.target.trim().length > 0, `${source.name} has an empty target`)
+      if (source.kind === 'rss') {
+        // A dead feed URL is invisible until a user watches the connector go red,
+        // which is how Anthropic's non-existent /rss.xml survived here.
+        assert.match(source.target, /^https:\/\//, `${source.name} is not a URL`)
+      }
+      if (source.kind === 'github') {
+        assert.match(source.target, /topic:/, `${source.name} should filter by topic`)
+      }
+      if (source.kind === 'reddit') {
+        assert.ok(!source.target.includes('/'), `${source.name} should be a bare subreddit name`)
+      }
+    }
+  })
+})
