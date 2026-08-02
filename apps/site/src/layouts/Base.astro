@@ -2,6 +2,7 @@
 /**
  * Base layout: head, nav, footer, and the scroll-reveal observer.
  */
+import '../styles/fonts.css'
 import '../styles/global.css'
 
 interface Props {
@@ -18,12 +19,15 @@ const {
 } = Astro.props
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href
+const ogImage = new URL(`${base}/og.png`, Astro.site).href
 
 const nav = [
   { href: '#how', label: 'How it works' },
   { href: '#scoring', label: 'Scoring' },
   { href: '#features', label: 'Features' },
-  { href: `${base}/showcase`, label: 'Showcase' },
+  // Trailing slash on purpose: GitHub Pages serves showcase/index.html and 301s
+  // the slashless form, so linking it costs every visitor an extra round trip.
+  { href: `${base}/showcase/`, label: 'Showcase' },
   { href: '#start', label: 'Get started' },
 ]
 ---
@@ -39,21 +43,28 @@ const nav = [
     <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
 
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sift" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={`${Astro.site}${base.slice(1)}/og.png`} />
+    <meta property="og:image" content={ogImage} />
+    {/* The real pixel dimensions of og.png, not the canonical 1200x630 — it is
+        rendered at 2x so X's expanded card stays sharp, and a scraper that
+        reserves layout from these numbers should be told the truth. */}
+    <meta property="og:image:width" content="2400" />
+    <meta property="og:image:height" content="1260" />
+    <meta property="og:image:alt" content="Sift — signal intelligence for technologists" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
     <meta name="theme-color" content="#0d0d14" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    {/* Same-origin, so no preconnect to a font CDN and nothing to hand a third
+        party a log line for. See src/styles/fonts.css. Only the latin faces are
+        preloaded — latin-ext is fetched on demand by unicode-range. */}
+    <link rel="preload" href={`${base}/fonts/inter-latin.woff2`} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={`${base}/fonts/jetbrains-mono-latin.woff2`} as="font" type="font/woff2" crossorigin />
 
     <script
       type="application/ld+json"
@@ -175,7 +186,7 @@ const nav = [
                 <li><a href="#how" class="transition-colors hover:text-fg">How it works</a></li>
                 <li><a href="#scoring" class="transition-colors hover:text-fg">Signal scoring</a></li>
                 <li><a href="#features" class="transition-colors hover:text-fg">Features</a></li>
-                <li><a href={`${base}/showcase`} class="transition-colors hover:text-fg">Showcase</a></li>
+                <li><a href={`${base}/showcase/`} class="transition-colors hover:text-fg">Showcase</a></li>
                 <li><a href="#privacy" class="transition-colors hover:text-fg">Privacy</a></li>
               </ul>
             </div>

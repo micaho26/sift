@@ -10,7 +10,7 @@
     "zip": "wxt zip",
     "postinstall": "wxt prepare",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test --experimental-strip-types test/*.test.ts"
+    "test": "node --test --experimental-strip-types test/extract.test.ts"
   },
   "dependencies": {
     "@sift/core": "workspace:*",

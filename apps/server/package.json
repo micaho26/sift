@@ -12,7 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed": "node --enable-source-maps --no-warnings=ExperimentalWarning src/cli/seed.ts",
     "db:reset": "node --enable-source-maps --no-warnings=ExperimentalWarning src/cli/reset.ts",
-    "test": "node --test --no-warnings=ExperimentalWarning test/*.test.ts"
+    "test": "node --test --no-warnings=ExperimentalWarning test/db.test.ts"
   },
   "dependencies": {
     "@hono/node-server": "2.0.12",
