@@ -1,0 +1,50 @@
+---
+/**
+ * 404 for the project page.
+ *
+ * The user page at micaho26.github.io has its own 404.html, but GitHub Pages does
+ * not cascade it into a project page — /sift/anything-wrong returned GitHub's
+ * default "File not found" until this file existed. Astro builds it to
+ * dist/404.html, which is exactly what Pages looks for.
+ */
+import Base from '../layouts/Base.astro'
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+
+const routes = [
+  { href: `${base}/`, label: 'Home', note: 'What Sift is, and how the scoring works' },
+  { href: `${base}/showcase/`, label: 'Screenshot tour', note: 'Every screen, in five flows' },
+  { href: 'https://github.com/micaho26/sift', label: 'Repository', note: 'Source, docs and issues' },
+  {
+    href: 'https://github.com/micaho26/sift/blob/main/docs/ARCHITECTURE.md',
+    label: 'Architecture',
+    note: 'Why it is built this way',
+  },
+]
+---
+
+<Base title="Sift — page not found" description="That page is not here. Sift is a local-first AI intelligence workstation.">
+  <main class="mx-auto flex min-h-[78vh] max-w-2xl flex-col justify-center px-6 py-24">
+    <p class="font-mono text-sm tracking-widest text-accent-300">404</p>
+    <h1 class="mt-3 text-4xl font-bold tracking-tight text-fg sm:text-5xl">That page isn't here.</h1>
+    <p class="mt-4 text-lg text-fg-secondary">
+      It may have moved, or the link may have been mistyped. Everything Sift has is one of these:
+    </p>
+
+    <ul class="mt-10 space-y-2">
+      {
+        routes.map((route) => (
+          <li>
+            <a
+              href={route.href}
+              class="group flex items-baseline justify-between gap-4 rounded-xl border border-border-subtle bg-bg-subtle px-5 py-4 transition-colors hover:border-accent/50"
+            >
+              <span class="font-medium text-fg">{route.label}</span>
+              <span class="text-right text-sm text-fg-tertiary">{route.note}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+</Base>
