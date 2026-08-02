@@ -23,6 +23,15 @@ pnpm build
 
 All three must pass. CI runs the same commands.
 
+If you use Claude Code, `/push` does the whole sequence — it surveys every
+worktree, branch and stash for work you might have forgotten, refuses to push
+when it finds credential-shaped strings or a gitignored file that is tracked,
+runs the pipeline locally *before* pushing, opens the PR, waits for CI, and then
+verifies the merge actually published: live site, no third-party asset origins,
+and a fresh clone that installs, tests, seeds and boots. See
+[`.claude/skills/push/SKILL.md`](.claude/skills/push/SKILL.md) — the two scripts
+under it are plain bash and worth reading before you trust them.
+
 ## Where things live
 
 | I want to… | Go to |
