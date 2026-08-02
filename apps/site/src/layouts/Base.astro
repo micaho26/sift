@@ -9,19 +9,21 @@ interface Props {
   description?: string
 }
 
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+const repo = 'https://github.com/micaho26/sift'
+
 const {
   title = 'Sift — signal intelligence for technologists',
   description = 'A local-first AI intelligence workstation. Harvest high-signal AI news from X, Xiaohongshu, Hacker News, arXiv and GitHub; score it, search it in any language, and turn it into briefings. Runs entirely on your machine.',
 } = Astro.props
 
-const base = import.meta.env.BASE_URL.replace(/\/$/, '')
-const repo = 'https://github.com/micaho26/sift'
 const canonical = new URL(Astro.url.pathname, Astro.site).href
 
 const nav = [
   { href: '#how', label: 'How it works' },
   { href: '#scoring', label: 'Scoring' },
   { href: '#features', label: 'Features' },
+  { href: `${base}/showcase`, label: 'Showcase' },
   { href: '#start', label: 'Get started' },
 ]
 ---
@@ -173,6 +175,7 @@ const nav = [
                 <li><a href="#how" class="transition-colors hover:text-fg">How it works</a></li>
                 <li><a href="#scoring" class="transition-colors hover:text-fg">Signal scoring</a></li>
                 <li><a href="#features" class="transition-colors hover:text-fg">Features</a></li>
+                <li><a href={`${base}/showcase`} class="transition-colors hover:text-fg">Showcase</a></li>
                 <li><a href="#privacy" class="transition-colors hover:text-fg">Privacy</a></li>
               </ul>
             </div>
